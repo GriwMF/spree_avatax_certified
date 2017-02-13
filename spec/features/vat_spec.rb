@@ -29,7 +29,7 @@ describe "VAT" do
 
     context 'Seller does not have Nexus Jurisdition registered' do
       let(:cr_address) { create(:address, address1: '350 Av Central', city: 'Tamarindo', zipcode: '50309', state_name: '', country: cr) }
-      let!(:avalara_order) { create(:avalara_order, state: 'address', ship_address: cr_address) }
+      let!(:avalara_order) { create(:avalara_order, state: 'address', ship_address: cr_address, bill_address: cr_address) }
 
       let(:res) { avalara_order.avalara_capture }
       before { prep_avalara_order }
@@ -50,7 +50,7 @@ describe "VAT" do
 
       context 'with BusinessIdentificationNo' do
         before do
-          Spree::Config.avatax_vat_id = '123456789'
+          avalara_order.user.update_attributes(vat_id: '123456789')
         end
 
         it 'origin country zero rate is returned' do
@@ -97,7 +97,7 @@ describe "VAT" do
 
       context 'with BusinessIdentificationNo' do
         before do
-          Spree::Config.avatax_vat_id = '123456789'
+          avalara_order.user.update_attributes(vat_id: '123456789')
         end
 
         it 'origin country zero rate is returned' do
@@ -125,7 +125,7 @@ describe "VAT" do
 
       context 'with BusinessIdentificationNo' do
         before do
-          Spree::Config.avatax_vat_id = '123456789'
+          avalara_order.user.update_attributes(vat_id: '123456789')
         end
 
         it 'origin country zero rate is returned' do
@@ -147,7 +147,6 @@ describe "VAT" do
 
   def prep_avalara_order
     set_seller_location
-    Spree::Config.avatax_vat_id = nil
     avalara_order.reload
     avalara_order.next!
   end

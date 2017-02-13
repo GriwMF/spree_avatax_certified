@@ -24,6 +24,17 @@ FactoryGirl.define do
     use_code_description 'Federal government'
   end
 
+  factory :us_zone, class: Spree::Zone do
+    name { "USA - #{rand(999999)}" }
+    description { generate(:random_string) }
+    transient do
+      zone_members_count 1
+    end
+    after(:create) do |zone, evaluator|
+      create_list(:zone_member, evaluator.zone_members_count, zone: zone)
+    end
+  end
+
   factory :clothing_tax_rate, class: Spree::TaxRate do
     name 'Tax'
     amount 0.0
@@ -61,7 +72,7 @@ FactoryGirl.define do
 
     before(:create) do |order, evaluator|
       if Spree::Country.count == 0
-        create(:country)
+        create(:country, name: 'United States')
       end
       if Spree::Zone.find_by(name: 'GlobalZone').nil?
         create(:global_zone, default_tax: true)
@@ -80,7 +91,7 @@ FactoryGirl.define do
       create(:avalara_shipment, order: order, cost: evaluator.shipment_cost )
       order.shipments.reload
 
-      order.update!
+      order.update_with_updater!
       order.next
     end
 
@@ -141,6 +152,10 @@ FactoryGirl.modify do
     tax_code { 'PC030000' }
   end
 
+  factory :zone_member, class: Spree::ZoneMember do
+    association :zoneable, factory: :country
+  end
+
   factory :address, class: Spree::Address do
     firstname 'John'
     lastname 'Doe'
@@ -153,14 +168,7 @@ FactoryGirl.modify do
     phone '555-555-0199'
     alternative_phone '555-555-0199'
 
-    state do |address|
-      if !Spree::State.find_by(name: address.state_name).nil?
-        Spree::State.find_by(name: address.state_name)
-      else
-         address.association(:state)
-      end
-    end
-
+    state { |address| Spree::State.find_by(abbr: 'AL') || address.association(:state, abbr: 'AL')}
     country do |address|
       if address.state
         address.state.country
@@ -168,5 +176,20 @@ FactoryGirl.modify do
         address.association(:country)
       end
     end
+
+    after(:create) do |address, evalulator|
+      zone = Spree::Zone.first || create(:global_zone)
+
+      zone.zone_members.create(zoneable: address.country)
+
+    end
+  end
+
+  factory :country, class: Spree::Country do
+    sequence(:iso_name) { |n| "ISO_NAME_#{n}" }
+    name 'United States'
+    iso 'US'
+    iso3 'USA'
+    numcode 840
   end
 end
