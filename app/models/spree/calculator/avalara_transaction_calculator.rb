@@ -19,7 +19,7 @@ module Spree
       return prev_tax_amount unless calculable.zone.include?(item_address)
 
       avalara_response = get_avalara_response(order)
-      tax_for_item(item, avalara_response)
+      [tax_for_item(item, avalara_response), 0].max
     end
 
     alias_method :compute_shipment, :compute_shipment_or_line_item
